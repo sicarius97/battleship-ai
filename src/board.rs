@@ -17,7 +17,7 @@ impl Board {
 
         vec
     }
-
+    /* only used for debug purposes
     pub fn get_state(&self) {
         println!("{:?}", &self.board_state[0..10]);
         println!("{:?}", &self.board_state[10..20]);
@@ -30,6 +30,7 @@ impl Board {
         println!("{:?}", &self.board_state[80..90]);
         println!("{:?}", &self.board_state[90..100])
     }
+    */
 
     pub fn set_index(&mut self, index: usize, val: i16) {
         self.board_state[index] = val;

@@ -2,10 +2,17 @@ use crate::board::Board;
 use crate::ship::Ship;
 use rand::Rng;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+const CARRIER: Ship = Ship::Carrier;
+const BATTLESHIP: Ship = Ship::Battleship;
+const DESTROYER: Ship = Ship::Destroyer;
+const SUBMARINE: Ship = Ship::Submarine;
+const CRUISER: Ship = Ship::Cruiser;
+
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Ai {
     pub move_num: u16,
     pub samples: u16,
+    ships_left: Vec<Ship>,
 }
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 enum Direction {
@@ -15,21 +22,18 @@ enum Direction {
 
 impl Ai {
     pub fn new(samples: u16) -> Self {
-        Self { samples, move_num: 0 }
+        Self { samples, move_num: 0, ships_left: vec![CARRIER, BATTLESHIP, DESTROYER, SUBMARINE, CRUISER] }
     }
 
-    pub fn simulate(&self, board: &mut Board) {
+    pub fn simulate(&self, board: &mut Board) -> usize {
         let mut all_boards: Vec<Vec<i16>> = Vec::new();
         let mut board_vec = Board::generate_board(10, 10); 
 
 
-        for x in 0..self.samples {
+        for _x in 0..self.samples {
             let mut base_board = board.clone();
-            println!("Board number: {}", x);
 
             self.place_all_random(&mut base_board);
-
-            base_board.get_state();
 
             all_boards.push(base_board.board_state.to_vec());
         }
@@ -61,35 +65,54 @@ impl Ai {
         println!("{:?}", &board_vec[80..90]);
         println!("{:?}", &board_vec[90..100]);
         println!("Length of array of boards: {}", all_boards.len());
-        println!("Optimal move at index: {}", max_index)
+        println!("Optimal move at index: {}", max_index);
+
+        max_index
     }
 
     pub fn place_all_random(&self, board: &mut Board) {
-        let carrier = Ship::Carrier;
-        let battleship = Ship::Battleship;
-        let destroyer = Ship::Destroyer;
-        let submarine = Ship::Submarine;
-        let cruiser = Ship::Cruiser;
+        for x in &self.ships_left {
+            self.place_ship(*x, board)
+        }
+    }
 
-        self.place_ship(carrier, board);
-        self.place_ship(battleship, board);
-        self.place_ship(destroyer, board);
-        self.place_ship(submarine, board);
-        self.place_ship(cruiser, board);
+    pub fn sunk_ship(&mut self) {
+        let mut input = String::new();
+
+        println!("Which ship did you sink?");
+        println!("1 - Carrier");
+        println!("2 - Battleship");
+        println!("3 - Cruiser");
+        println!("4 - Submarine");
+        println!("5 - Destroyer");
+
+        std::io::stdin().read_line(&mut input).expect("Did not enter a valid string!");
+
+        let ship = match input.trim() {
+            "1" => Ship::Carrier,
+            "2" => Ship::Battleship,
+            "3" => Ship::Cruiser,
+            "4" => Ship::Submarine,
+            "5" => Ship::Destroyer,
+            _ => panic!("Not a valid input option!")
+        };
+
+        self.ships_left.retain(|&x| x != ship)
     }
 
     fn place_ship(&self, ship: Ship, board: &mut Board) {
         let mut random_index = rand::thread_rng().gen_range(0..100);
         let mut is_occupied = true;
         let mut direction = Direction::Horizontal;
-        let is_vert = rand::thread_rng().gen_range(0..10);
-
-        if is_vert % 2 == 1 {
-            direction = Direction::Vertical;
-        }
 
 
         while is_occupied {
+            let is_vert = rand::thread_rng().gen_range(0..10);
+
+            if is_vert % 2 == 1 {
+                direction = Direction::Vertical;
+            }
+            
             let check = self.check_slice(random_index, ship.size().try_into().unwrap(), board, direction);
 
             if check {
